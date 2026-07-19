@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>G. Nikolopoulos — Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0A1930;
+    --bg-panel: #0D2242;
+    --bg-panel-2: #0F274B;
+    --grid-line: rgba(148,180,214,0.07);
+    --ink: #EAF2FB;
+    --ink-dim: #93ACC9;
+    --ink-faint: #5D7695;
+    --accent: #4FD1FF;
+    --accent-soft: rgba(79,209,255,0.12);
+    --amber: #FFB454;
+    --amber-soft: rgba(255,180,84,0.12);
+    --line: #23436A;
+    --line-bright: #3A6089;
+    --radius: 3px;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --display: 'Space Grotesk', sans-serif;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  html{scroll-behavior:smooth;}
+
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.6;
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 48px 48px;
+    overflow-x:hidden;
+  }
+
+  ::selection{ background:var(--accent); color:#04121F; }
+
+  a{ color:var(--accent); text-decoration:none; }
+
+  .wrap{
+    max-width:1080px;
+    margin:0 auto;
+    padding:0 32px;
+  }
+
+  /* ---------- nav ---------- */
+  header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(10,25,48,0.85);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  nav.wrap{
+    display:flex; align-items:center; justify-content:space-between;
+    height:64px;
+  }
+  .logo{
+    font-family:var(--mono);
+    font-size:16px;
+    letter-spacing:0.02em;
+    color:var(--ink);
+    display:flex; align-items:center;
+  }
+  .logo .prompt{ color:var(--accent); margin-right:2px; }
+  .logo .cursor{
+    color:var(--accent);
+    animation:blink 1.1s step-end infinite;
+  }
+  @keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+
+  nav ul{
+    list-style:none; display:flex; gap:32px;
+    font-family:var(--mono); font-size:12px; letter-spacing:0.06em;
+    color:var(--ink-dim);
+  }
+  nav ul a{ color:var(--ink-dim); transition:color .2s; }
+  nav ul a:hover, nav ul a:focus-visible{ color:var(--accent); }
+
+  /* ---------- hero ---------- */
+  .hero{
+    padding:96px 0 64px;
+    position:relative;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:0.12em;
+    color:var(--accent);
+    text-transform:uppercase;
+    display:flex; align-items:center; gap:10px;
+    margin-bottom:20px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:20px; height:1px;
+    background:var(--accent);
+    display:inline-block;
+  }
+  h1{
+    font-family:var(--display);
+    font-weight:700;
+    font-size:clamp(2.6rem, 6vw, 4.6rem);
+    line-height:1.02;
+    letter-spacing:-0.01em;
+    color:var(--ink);
+    max-width:14ch;
+  }
+  h1 .surname{ color:var(--ink-dim); font-weight:500; }
+  .hero p.lede{
+    margin-top:24px;
+    max-width:52ch;
+    font-size:17px;
+    color:var(--ink-dim);
+  }
+  .hero p.lede strong{ color:var(--ink); font-weight:600; }
+
+  .status-row{
+    display:flex; flex-wrap:wrap; gap:12px;
+    margin-top:32px;
+  }
+  .chip{
+    font-family:var(--mono); font-size:11px; letter-spacing:0.05em;
+    padding:7px 12px;
+    border:1px solid var(--line-bright);
+    border-radius:var(--radius);
+    color:var(--ink-dim);
+    display:inline-flex; align-items:center; gap:7px;
+    background:rgba(255,255,255,0.02);
+  }
+  .chip .led{ width:6px; height:6px; border-radius:50%; background:var(--accent); box-shadow:0 0 6px var(--accent); }
+  .chip.amber .led{ background:var(--amber); box-shadow:0 0 6px var(--amber); }
+
+  /* ---------- readout strip ---------- */
+  .readout{
+    margin-top:56px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+  }
+  .readout-item{
+    padding:22px 24px;
+    border-right:1px solid var(--line);
+  }
+  .readout-item:last-child{ border-right:none; }
+  .readout-item .label{
+    font-family:var(--mono); font-size:10px; letter-spacing:0.1em;
+    color:var(--ink-faint); text-transform:uppercase;
+    margin-bottom:8px;
+  }
+  .readout-item .value{
+    font-family:var(--mono); font-size:15px;
+    color:var(--ink);
+  }
+  .readout-item .value .accent{ color:var(--accent); }
+
+  @media (prefers-reduced-motion: reduce){
+    .logo .cursor{ animation:none; }
+  }
+  @media (max-width:640px){
+    .readout-item{ border-right:none; border-bottom:1px solid var(--line); }
+    .readout-item:last-child{ border-bottom:none; }
+  }
+
+  /* ---------- sections ---------- */
+  section{ padding:88px 0; }
+  section.projects{ border-top:1px solid var(--line); }
+  .section-head{ margin-bottom:48px; }
+  .section-head h2{
+    font-family:var(--display); font-weight:600;
+    font-size:clamp(1.6rem, 3vw, 2.2rem);
+    color:var(--ink);
+    margin-top:8px;
+  }
+
+  /* ---------- project cards ---------- */
+  .project{
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--bg-panel);
+    margin-bottom:32px;
+    overflow:hidden;
+  }
+  .project-head{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    flex-wrap:wrap; gap:16px;
+    padding:28px 28px 20px;
+    border-bottom:1px solid var(--line);
+  }
+  .project-head h3{
+    font-family:var(--display); font-weight:600;
+    font-size:1.4rem; color:var(--ink);
+  }
+  .project-head .path{
+    font-family:var(--mono); font-size:12px; color:var(--ink-faint);
+    margin-top:6px;
+  }
+  .project-status{ display:flex; gap:10px; flex-wrap:wrap; }
+
+  .project-body{ padding:24px 28px 28px; }
+  .project-body > p{ color:var(--ink-dim); max-width:68ch; margin-bottom:24px; }
+
+  .steps{ list-style:none; counter-reset:step; }
+  .steps li{
+    counter-increment:step;
+    position:relative;
+    padding:0 0 20px 40px;
+    border-left:1px solid var(--line-bright);
+    margin-left:9px;
+  }
+  .steps li:last-child{ border-left:1px solid transparent; padding-bottom:0; }
+  .steps li::before{
+    content: counter(step, decimal-leading-zero);
+    font-family:var(--mono); font-size:10px;
+    color:var(--bg);
+    background:var(--accent);
+    width:20px; height:20px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    position:absolute; left:-10px; top:0;
+  }
+  .steps li h4{
+    font-family:var(--sans); font-weight:600; font-size:14.5px;
+    color:var(--ink); margin-bottom:4px;
+  }
+  .steps li p{ color:var(--ink-dim); font-size:14.5px; }
+  .steps li code, .project-body code{
+    font-family:var(--mono); font-size:12.5px;
+    background:rgba(79,209,255,0.08);
+    color:var(--accent);
+    padding:1px 6px; border-radius:2px;
+    word-break:break-all;
+  }
+
+  .note{
+    margin-top:24px;
+    border:1px dashed var(--line-bright);
+    border-radius:var(--radius);
+    padding:16px 18px;
+    background:rgba(255,180,84,0.04);
+  }
+  .note .note-label{
+    font-family:var(--mono); font-size:10px; letter-spacing:0.08em;
+    color:var(--amber); text-transform:uppercase; margin-bottom:6px;
+  }
+  .note p{ color:var(--ink-dim); font-size:14px; }
+
+  details.substeps{ margin-top:22px; }
+  details.substeps summary{
+    cursor:pointer;
+    font-family:var(--mono); font-size:11.5px; letter-spacing:0.05em;
+    color:var(--ink-dim); text-transform:uppercase;
+    padding:10px 0; list-style:none;
+    display:flex; align-items:center; gap:8px;
+  }
+  details.substeps summary::-webkit-details-marker{ display:none; }
+  details.substeps summary::before{
+    content:"▸"; color:var(--accent); transition:transform .2s;
+  }
+  details.substeps[open] summary::before{ transform:rotate(90deg); }
+  details.substeps summary:hover{ color:var(--ink); }
+
+  .tags{ display:flex; flex-wrap:wrap; gap:8px; margin-top:24px; padding-top:20px; border-top:1px solid var(--line); }
+  .tag{
+    font-family:var(--mono); font-size:11px;
+    color:var(--ink-faint);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:4px 9px;
+  }
+
+  /* ---------- stack ---------- */
+  .stack{ border-top:1px solid var(--line); }
+  .stack-grid{
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+  }
+  .stack-item{
+    background:var(--bg-panel);
+    padding:20px;
+  }
+  .stack-item .cat{
+    font-family:var(--mono); font-size:10px; letter-spacing:0.08em;
+    color:var(--accent); text-transform:uppercase; margin-bottom:8px;
+  }
+  .stack-item .items{ color:var(--ink-dim); font-size:13.5px; }
+
+  /* ---------- footer ---------- */
+  footer{ border-top:1px solid var(--line); padding:56px 0 48px; }
+  footer .wrap{
+    display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:24px;
+  }
+  footer h2{
+    font-family:var(--display); font-weight:600; font-size:1.8rem;
+  }
+  footer p{ color:var(--ink-dim); margin-top:10px; max-width:44ch; }
+  .contact-links{ display:flex; flex-direction:column; gap:8px; font-family:var(--mono); font-size:13px; }
+  .contact-links a{ color:var(--ink-dim); }
+  .contact-links a:hover{ color:var(--accent); }
+  .foot-note{
+    margin-top:40px; padding-top:20px; border-top:1px solid var(--line);
+    font-family:var(--mono); font-size:11px; color:var(--ink-faint);
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;
+  }
+
+  a:focus-visible, summary:focus-visible, button:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px;
+  }
+
+  @media (max-width:640px){
+    nav ul{ gap:18px; }
+    .wrap{ padding:0 20px; }
+    .project-head{ padding:22px 20px 16px; }
+    .project-body{ padding:20px 20px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="wrap">
+    <div class="logo"><span class="prompt">&gt;</span>gn<span class="cursor">_</span></div>
+  </nav>
+</header>
+
+<main>
+  <section class="hero wrap">
+    <div class="eyebrow">Junior Systems Administrator</div>
+    <h1>Learning identity infrastructure by building it.</h1>
+    <p class="lede">Home-lab projects covering on-prem Active Directory, role-based access, Group Policy, and Entra ID cloud sync — built to understand how real IT environments work.</p>
+  </section>
+
+  <section class="projects wrap" id="projects">
+    <div class="section-head">
+      <div class="eyebrow">Lab Projects</div>
+      <h2>Two labs, one identity stack — built and broken on purpose.</h2>
+    </div>
+
+    <!-- PROJECT 1 -->
+    <article class="project">
+      <div class="project-head">
+        <div>
+          <h3>Home Lab / Azure AD Sync</h3>
+          <div class="path">On-prem VirtualBox domain controller → Microsoft Entra ID tenant</div>
+        </div>
+        <div class="project-status">
+          <span class="chip"><span class="led"></span>SYNC ENABLED</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <p>Connected a local Active Directory domain to the cloud using Microsoft Entra Connect Cloud Sync, then proved the whole identity path works — from a hash on a local DC to a live cloud login.</p>
+
+        <ol class="steps">
+          <li>
+            <h4>Environment setup</h4>
+            <p>Built a local AD domain controller (<code>corp.local</code>) inside VirtualBox, created a Microsoft Entra ID tenant, and bridged the two with the Entra Connect Cloud Sync agent to sync identities upward.</p>
+          </li>
+          <li>
+            <h4>Test users &amp; provisioning</h4>
+            <p>Created test users inside a dedicated <code>IT_Department</code> OU. Cloud provisioning stalled on scope filters until I fed Entra ID the exact distinguished name path: <code>CN=Antonis Papathanasiou,OU=IT_Department,DC=corp,DC=local</code>.</p>
+          </li>
+          <li>
+            <h4>Continuous sync</h4>
+            <p>Flipped the sync configuration from <code>Disabled</code> to <code>Enabled</code> to wake up the pipeline, then confirmed replication with a <code>Directory synced: Yes</code> status flag and an end-to-end cloud login.</p>
+          </li>
+        </ol>
+
+        <div class="note">
+          <div class="note-label">How it works</div>
+          <p>The local sync agent extracts a password hash from Active Directory, hashes it again, and uploads it to Entra ID — authentication then happens on Microsoft's servers against that stored hash, not against the domain controller. Sync is one-way, so user management still happens locally. If the lab VM is off, synced users can still log in (Entra ID keeps its own copy), but new changes queue up until the domain controller is back online.</p>
+        </div>
+
+        <div class="tags">
+          <span class="tag">Active Directory DS</span>
+          <span class="tag">Microsoft Entra ID</span>
+          <span class="tag">Entra Connect Cloud Sync</span>
+          <span class="tag">Password Hash Sync</span>
+          <span class="tag">VirtualBox</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- PROJECT 2 -->
+    <article class="project">
+      <div class="project-head">
+        <div>
+          <h3>AD_DS_Enterprise_Lab</h3>
+          <div class="path">Enterprise Active Directory, built from scratch with RBAC &amp; security hardening</div>
+        </div>
+        <div class="project-status">
+          <span class="chip amber"><span class="led"></span>GPO LINKED</span>
+        </div>
+      </div>
+      <div class="project-body">
+        <p>The goal wasn't just a working domain — it was a production-shaped one. Department-level OUs, role-based access instead of one-off permissions, a hardened lockout policy, and a DNS setup that keeps the domain isolated without cutting it off from the internet.</p>
+
+        <ol class="steps">
+          <li>
+            <h4>Mapping the company &amp; setting up RBAC</h4>
+            <p>Organized the environment into department-level OUs (HR, Finance, IT, Sales) and created two global security groups per department — <code>[Department]_Supervisors</code> and <code>[Department]_Staff</code> — so a new hire just drops into the right group and inherits the correct access instantly.</p>
+          </li>
+          <li>
+            <h4>Locking the front door with Group Policy</h4>
+            <p>Created a domain-wide GPO, <code>Corporate_Security_Policy</code>, linked at the root of the domain. Configured a five-strikes account lockout policy — five bad password attempts freezes the account for 30 minutes — then forced it out immediately with <code>gpupdate /force</code> instead of waiting on the default refresh cycle.</p>
+          </li>
+          <li>
+            <h4>Solving the DNS forwarding problem</h4>
+            <p>The DC's network card has to point to its own loopback address to resolve domain controllers and log users in, which leaves it with no route to the public internet. Configured DNS Forwarders in Windows DNS Manager so local queries resolve internally while everything else forwards out to <code>8.8.8.8</code> — an isolated domain that can still reach the internet when it needs to.</p>
+          </li>
+        </ol>
+
+        <div class="tags">
+          <span class="tag">Active Directory DS</span>
+          <span class="tag">Group Policy Objects</span>
+          <span class="tag">RBAC design</span>
+          <span class="tag">DNS Manager</span>
+          <span class="tag">Account Lockout Policy</span>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="stack wrap" id="stack">
+    <div class="section-head">
+      <div class="eyebrow">Toolset</div>
+      <h2>What's running under the hood</h2>
+    </div>
+    <div class="stack-grid">
+      <div class="stack-item">
+        <div class="cat">Identity</div>
+        <div class="items">Active Directory Domain Services, Microsoft Entra ID, Entra Connect Cloud Sync, Password Hash Sync</div>
+      </div>
+      <div class="stack-item">
+        <div class="cat">Access control</div>
+        <div class="items">RBAC design, Global Security Groups, Organizational Units, Group Policy Objects</div>
+      </div>
+      <div class="stack-item">
+        <div class="cat">Networking</div>
+        <div class="items">Windows DNS Manager, DNS forwarders, domain name resolution</div>
+      </div>
+      <div class="stack-item">
+        <div class="cat">Environment</div>
+        <div class="items">VirtualBox, Windows Server, PowerShell, gpupdate</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer id="contact">
+  <div class="wrap">
+    <div>
+      <h2>Get in touch.</h2>
+      <p>Starting out in IT and systems administration — happy to talk about these projects or a role.</p>
+    </div>
+    <div class="contact-links">
+      <a href="mailto:nikolgg0@hotmail.com">nikolgg0@hotmail.com</a>
+    </div>
+  </div>
+  <div class="wrap foot-note">
+    <span>g.nikolopoulos — portfolio</span>
+  </div>
+</footer>
+
+</body>
+</html>
