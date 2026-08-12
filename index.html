@@ -107,8 +107,8 @@ button{ font:inherit; color:inherit; background:none; border:none; cursor:pointe
 .nav-logo{ font-family:var(--font-mono); font-size:15px; display:flex; align-items:center; gap:2px; }
 .nav-logo .accent{ color:var(--accent); }
 .nav-links{ display:flex; align-items:center; gap:28px; font-family:var(--font-mono); font-size:12px; letter-spacing:.04em; color:var(--ink-dim); }
-.nav-links button, .nav-links a{ transition:color .18s ease; position:relative; font:inherit; background:none; border:none; color:inherit; cursor:pointer; padding:0; }
-.nav-links button:hover, .nav-links button:focus-visible, .nav-links a:hover, .nav-links a:focus-visible{ color:var(--ink); }
+.nav-links a{ transition:color .18s ease; position:relative; }
+.nav-links a:hover, .nav-links a:focus-visible{ color:var(--ink); }
 .nav-actions{ display:flex; align-items:center; gap:10px; }
 .icon-btn{
   width:32px; height:32px; display:flex; align-items:center; justify-content:center;
@@ -461,19 +461,82 @@ button{ font:inherit; color:inherit; background:none; border:none; cursor:pointe
   .section{ padding:72px 20px; }
 }
 
+/* ===================================================================
+   BOOT SEQUENCE
+   =================================================================== */
+:root{
+  --boot-plate:#FFA53C;
+  --boot-ink:#06070C;
+}
+html.boot-active{ overflow:hidden; height:100%; }
+html.boot-active body{ overflow:hidden; height:100%; }
+
+.boot{
+  position:fixed; inset:0; z-index:9999;
+  pointer-events:none;
+}
+.boot svg{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+.boot-plate{ fill:var(--boot-plate); }
+.boot-mark-stroke{
+  fill:none; stroke:var(--boot-ink); stroke-width:1; stroke-linecap:square; stroke-linejoin:miter;
+  stroke-dasharray:100; stroke-dashoffset:100;
+}
+.boot-label{
+  position:absolute; left:0; right:0; bottom:28px; text-align:center;
+  font-family:var(--font-mono); font-size:11px; font-weight:600; letter-spacing:.16em;
+  color:var(--boot-ink); text-transform:uppercase;
+  opacity:0; transition:opacity .3s ease;
+}
+.boot.is-cycling .boot-label{ opacity:.85; }
+.boot.is-revealing .boot-label,
+.boot.is-done .boot-label{ opacity:0; }
+
+.boot.is-done{ display:none; }
+
+@media (prefers-reduced-motion: reduce){
+  .boot{ display:none; }
+}
 </style>
 </head>
 <body>
+
+<!-- ============ BOOT SEQUENCE ============ -->
+<div class="boot" id="boot" aria-hidden="true">
+  <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+    <defs>
+      <mask id="boot-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+        <rect x="0" y="0" width="100" height="100" fill="white"/>
+        <!-- boot-aspect: cancels the horizontal stretch caused by the square
+             100x100 viewBox being mapped onto a non-square (widescreen)
+             viewport with preserveAspectRatio="none". JS sets its scaleX
+             to (viewport height / viewport width) so the mark below renders
+             with equal px-per-unit on both axes instead of being squashed. -->
+        <g id="boot-aspect" transform="translate(50 50) scale(1,1) translate(-50 -50)">
+          <!-- boot-mark: a fused G/N monogram, built the way Lando's L7 mark
+               shares a stroke between its two letterforms — the G's right
+               edge and the N's left vertical are the same line (x=50.6). -->
+          <g id="boot-mark" transform="translate(50 50) scale(1) translate(-50 -50)">
+            <path class="boot-mark-stroke" pathLength="100" d="M 50.6 48.8 L 50.6 47.0 L 44.6 47.0 L 44.6 53.0 L 50.6 53.0 L 50.6 50.6 L 47.6 50.6" stroke="black"/>
+            <path class="boot-mark-stroke" pathLength="100" d="M 50.6 53.0 L 50.6 47.0 L 55.4 53.0 L 55.4 47.0" stroke="black"/>
+          </g>
+        </g>
+      </mask>
+    </defs>
+    <rect class="boot-plate" x="0" y="0" width="100" height="100" mask="url(#boot-mask)"/>
+  </svg>
+  <div class="boot-label">Boot &middot; g.nikolopoulos</div>
+</div>
+<noscript><style>.boot{ display:none; }</style></noscript>
 
 <!-- ============ NAV ============ -->
 <header class="nav">
   <div class="nav-inner">
     <div class="nav-logo"><span class="accent">&gt;</span>&nbsp;g.nikolopoulos</div>
     <nav class="nav-links">
-      <button data-scroll-to="stack">Stack</button>
-      <button data-scroll-to="homelab">Homelab</button>
-      <button data-scroll-to="operations">Operations</button>
-      <button data-scroll-to="contact">Contact</button>
+      <a href="#stack" data-scroll-to="stack">Stack</a>
+      <a href="#homelab" data-scroll-to="homelab">Homelab</a>
+      <a href="#operations" data-scroll-to="operations">Operations</a>
+      <a href="#contact" data-scroll-to="contact">Contact</a>
     </nav>
     <div class="nav-actions">
       <button class="icon-btn" data-theme-toggle aria-label="Toggle theme">
@@ -670,8 +733,252 @@ button{ font:inherit; color:inherit; background:none; border:none; cursor:pointe
 (function () {
   "use strict";
 
-  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  /* =============================================================
+     BOOT SEQUENCE
+     A three-phase overlay: plate -> draw loop -> hole-punch reveal.
+     Runs before the rest of the app boots so scroll-reveal starts
+     only once the site is unlocked.
+     ============================================================= */
   var root = document.documentElement;
+  var bootReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var bootQueue = [];
+  window.__bootDone = false;
+  function afterBoot(fn) {
+    if (window.__bootDone) { fn(); } else { bootQueue.push(fn); }
+  }
+  window.__afterBoot = afterBoot;
+
+  (function runBoot() {
+    var bootEl = document.getElementById("boot");
+    var markEl = document.getElementById("boot-mark");
+    var aspectEl = document.getElementById("boot-aspect");
+    var strokes = bootEl ? bootEl.querySelectorAll(".boot-mark-stroke") : [];
+
+    function finishNow() {
+      window.__bootDone = true;
+      root.classList.remove("boot-active");
+      if (bootEl) bootEl.classList.add("is-done");
+      var q = bootQueue.slice();
+      bootQueue.length = 0;
+      q.forEach(function (fn) { fn(); });
+    }
+
+    if (bootReduced || !bootEl || !markEl) {
+      finishNow();
+      return;
+    }
+
+    root.classList.add("boot-active");
+    bootEl.classList.add("is-cycling");
+
+    // shared easing curve — the same cubic-bezier(.16,1,.3,1) used for hovers,
+    // modals, and the topology wires elsewhere on the site, so the boot
+    // sequence's motion matches the rest of the page instead of using its
+    // own separate feel.
+    function makeCubicBezier(x1, y1, x2, y2) {
+      function A(a1, a2) { return 1 - 3 * a2 + 3 * a1; }
+      function B(a1, a2) { return 3 * a2 - 6 * a1; }
+      function C(a1) { return 3 * a1; }
+      function calcBezier(t, a1, a2) { return ((A(a1, a2) * t + B(a1, a2)) * t + C(a1)) * t; }
+      function calcSlope(t, a1, a2) { return 3 * A(a1, a2) * t * t + 2 * B(a1, a2) * t + C(a1); }
+      function getTForX(x) {
+        var t = x;
+        for (var i = 0; i < 8; i++) {
+          var slope = calcSlope(t, x1, x2);
+          if (Math.abs(slope) < 1e-6) return t;
+          t -= (calcBezier(t, x1, x2) - x) / slope;
+        }
+        return t;
+      }
+      return function (x) {
+        if (x <= 0) return 0;
+        if (x >= 1) return 1;
+        return calcBezier(getTForX(x), y1, y2);
+      };
+    }
+    var EASE = makeCubicBezier(0.16, 1, 0.3, 1);
+
+    // ---- aspect-ratio correction + coverage ----
+    // The plate's 100x100 viewBox is stretched non-uniformly (preserveAspectRatio="none")
+    // onto whatever the real (non-square) viewport is, so drawing the mark straight into
+    // that space would squash it horizontally on any widescreen window. boot-aspect
+    // cancels that by pre-compressing local x by (viewport height / viewport width) —
+    // after the outer stretch re-expands it, the mark ends up with equal px-per-unit on
+    // both axes. Because that correction changes how far (in local units) the mark's
+    // farthest point actually sits from the viewport corners, SCALE_END has to be
+    // computed per-viewport too, rather than a single fixed number — otherwise a fixed
+    // value tuned for one aspect ratio would undershoot on an ultrawide window and leave
+    // a sliver of plate showing in the corners at the end of the reveal.
+    var MARK_FARTHEST = 6.18; // farthest point of the G/N mark from its own center, in
+                               // the mark's local design units (fixed — from the path
+                               // geometry above, independent of viewport size)
+    var SCALE_END = 20; // overwritten by updateForViewport() below before use
+    function updateForViewport() {
+      var vw = window.innerWidth || 1;
+      var vh = window.innerHeight || 1;
+      var correctionX = vh / vw;
+      if (aspectEl) {
+        aspectEl.setAttribute("transform", "translate(50 50) scale(" + correctionX + ",1) translate(-50 -50)");
+      }
+      // distance (in local units) from viewport center to its corner, once the
+      // aspect correction is accounted for
+      var requiredUnits = 50 * Math.sqrt(Math.pow(vw / vh, 2) + 1);
+      SCALE_END = (requiredUnits / MARK_FARTHEST) * 1.15; // +15% margin
+    }
+    updateForViewport();
+    window.addEventListener("resize", updateForViewport);
+
+    // ---- tuning constants ----
+    var CYCLE = 1080;      // ms per draw-loop cycle
+    var DRAW_IN = 33;      // snap-to-stem
+    var DRAW_OUT = 420;    // extend back out
+    var MIN_MS = 1150;     // minimum time the plate stays up, even if load is instant
+    var REVEAL_MS = 350;   // duration of the hole-punch expansion — nudged up slightly
+                            // from the measured ~300-340ms for a touch less abruptness
+    var EXPO = 1.6;        // ease-in exponent driving the growth curve — measured fit from
+                            // counting non-plate pixels per frame in the reference: the hole
+                            // barely grows for the first third, then bursts open. That abrupt
+                            // acceleration IS the signature of the reference reveal.
+    var INK_OUT = 0.16;    // fraction of REVEAL_MS over which the ink fades in
+    var FADE_FROM = 0.72;  // fraction of REVEAL_MS after which the plate opacity fades —
+                            // widened from .80 so the overlay's final disappearance is a
+                            // gentler fade rather than a quick pop at the very end
+
+    var stagger = 130; // ms the second stroke (the N) trails the first (the G)
+
+    // the cycle position at which BOTH strokes (including the staggered
+    // second one) are guaranteed to be fully drawn and holding
+    var HOLD_START = DRAW_IN + DRAW_OUT + stagger;
+
+    function strokeProgress(tInCycle, delay) {
+      var t = tInCycle - delay;
+      if (t <= 0) return 0; // fully retracted (dash offset 100)
+      if (t < DRAW_IN) {
+        return 1 - (t / DRAW_IN); // 1 -> 0 (collapses to a stem fast)
+      }
+      t -= DRAW_IN;
+      if (t < DRAW_OUT) {
+        return EASE(t / DRAW_OUT); // 0 -> 1 (extends back out), same curve as the reveal
+      }
+      return 1; // held fully drawn
+    }
+
+    var startTime = null;
+    var revealStarted = false;
+    var revealStart = null;
+    var pageLoaded = false;
+    var rafId = null;
+    var released = false;
+
+    function tick(now) {
+      if (startTime === null) startTime = now;
+      var elapsed = now - startTime;
+
+      if (!revealStarted) {
+        var tInCycle = elapsed % CYCLE;
+        strokes.forEach(function (s, i) {
+          var delay = i === 0 ? 0 : stagger;
+          var p = strokeProgress(tInCycle, delay);
+          s.style.strokeDashoffset = String(100 - 100 * p);
+        });
+
+        // Only allow the reveal to start once the cycle has naturally reached
+        // its fully-drawn hold window (tInCycle >= HOLD_START). Previously this
+        // could fire mid-draw and force-snap a half-drawn mark to fully drawn
+        // in a single frame — a visible pop right before the reveal. Waiting
+        // for the hold window means the strokes are already sitting at 0
+        // dashoffset when we "snap" them, so the handoff is invisible.
+        var canReveal = pageLoaded && elapsed >= MIN_MS && tInCycle >= HOLD_START;
+        if (canReveal) {
+          // belt-and-braces: strokes should already be at 0 here, this just
+          // guarantees it
+          strokes.forEach(function (s) { s.style.strokeDashoffset = "0"; });
+          revealStarted = true;
+          revealStart = now;
+          bootEl.classList.remove("is-cycling");
+          bootEl.classList.add("is-revealing");
+
+          // unlock the page and let the hero/.reveal elements start
+          // animating in right as the hole begins opening — by the time
+          // the hole clears the viewport the content is already mid-reveal
+          // instead of landing on an empty page.
+          release();
+        }
+      } else {
+        var rt = now - revealStart;
+        var rp = Math.min(1, rt / REVEAL_MS);
+
+        var scale = 1 + (SCALE_END - 1) * Math.pow(rp, EXPO);
+        markEl.setAttribute("transform", "translate(50 50) scale(" + scale + ") translate(-50 -50)");
+
+        var inkP = EASE(Math.min(1, rt / (REVEAL_MS * INK_OUT)));
+        strokes.forEach(function (s) { s.style.opacity = String(inkP); });
+
+        if (rp >= FADE_FROM) {
+          var fadeP = (rp - FADE_FROM) / (1 - FADE_FROM);
+          bootEl.style.opacity = String(1 - fadeP);
+        }
+
+        if (rp >= 1) {
+          finish();
+          return;
+        }
+      }
+
+      rafId = requestAnimationFrame(tick);
+    }
+
+    // release(): unlock scroll and let queued hero/reveal callbacks start
+    // animating while the hole is still opening, so the reveal doesn't
+    // land on an empty page. Fires once, at the moment the hole starts
+    // opening — decoupled from finish() below.
+    function release() {
+      if (released) return;
+      released = true;
+      root.classList.remove("boot-active");
+      window.__bootDone = true;
+      var q = bootQueue.slice();
+      bootQueue.length = 0;
+      q.forEach(function (fn) { fn(); });
+    }
+
+    // finish(): tear down the overlay itself once the plate has fully
+    // swept away. Scroll/content were already unlocked by release() above.
+    function finish() {
+      release(); // safety net in case reveal is somehow skipped
+      if (bootEl) {
+        bootEl.classList.remove("is-revealing");
+        bootEl.classList.add("is-done");
+      }
+      if (rafId) cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", updateForViewport);
+    }
+
+    window.addEventListener(
+      "load",
+      function () {
+        pageLoaded = true;
+      },
+      { once: true }
+    );
+
+    // safety net — never leave the plate up longer than this even if
+    // the load event never fires (e.g. slow subresource)
+    setTimeout(function () {
+      pageLoaded = true;
+    }, 6000);
+
+    rafId = requestAnimationFrame(tick);
+  })();
+
+  /* =============================================================
+     MAIN APP — gated behind boot so scroll-reveal only starts once
+     the boot overlay has released.
+     ============================================================= */
+  window.__afterBoot(function () {
+  "use strict";
+
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* =============================================================
      DATA — edit this to match your real stack / projects
@@ -807,7 +1114,8 @@ button{ font:inherit; color:inherit; background:none; border:none; cursor:pointe
   }
 
   /* =============================================================
-     THEME TOGGLE
+     THEME TOGGLE (in-memory only — add localStorage yourself if
+     deploying outside an environment that blocks it)
      ============================================================= */
   function toggleTheme() {
     var isLight = root.getAttribute("data-theme") === "light";
@@ -902,6 +1210,7 @@ button{ font:inherit; color:inherit; background:none; border:none; cursor:pointe
     var data = STACK[category];
     if (!data) return;
 
+    // ---- desktop node map ----
     if (mapEl && svgEl) {
       mapEl.querySelectorAll(".topo-node").forEach(function (n) {
         n.remove();
@@ -948,6 +1257,7 @@ button{ font:inherit; color:inherit; background:none; border:none; cursor:pointe
       });
     }
 
+    // ---- mobile list ----
     if (mobileEl) {
       mobileEl.innerHTML = "";
       data.nodes.forEach(function (node) {
@@ -989,20 +1299,20 @@ button{ font:inherit; color:inherit; background:none; border:none; cursor:pointe
     opnsense: {
       name: "OPNsense",
       role: "Core Router / Firewall",
-      uptime: "14d 06h",
-      usage: 34
+      uptime: "14d 06h", // TODO — replace with your real uptime
+      usage: 34 // TODO — replace with real RAM usage %
     },
     proxmox: {
       name: "Proxmox VE",
       role: "Primary Hypervisor",
-      uptime: "41d 12h",
-      usage: 62
+      uptime: "41d 12h", // TODO
+      usage: 62 // TODO
     },
     docker: {
       name: "Docker / Portainer",
       role: "Container Engine",
-      uptime: "41d 09h",
-      usage: 48
+      uptime: "41d 09h", // TODO
+      usage: 48 // TODO
     }
   };
   var WIRE_MAP = {
@@ -1121,6 +1431,7 @@ button{ font:inherit; color:inherit; background:none; border:none; cursor:pointe
     OPERATIONS.forEach(function (op, i) {
       opsGrid.appendChild(buildOpCard(op, i));
     });
+    // re-observe the freshly-added reveal cards
     if ("IntersectionObserver" in window && !reduced) {
       var io2 = new IntersectionObserver(
         function (entries) {
@@ -1283,7 +1594,10 @@ button{ font:inherit; color:inherit; background:none; border:none; cursor:pointe
       });
     });
   }
+
+  }); // end afterBoot
 })();
+
 </script>
 </body>
 </html>
