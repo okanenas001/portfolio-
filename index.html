@@ -1,12 +1,9 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-<link rel="icon" type="image/svg+xml" href="gn-icon.svg">
-<link rel="alternate icon" type="image/png" href="gn-icon-512.png">
-<link rel="apple-touch-icon" href="gn-icon-512.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Junior Systems Administrator - Georgios Nikolopoulos</title>
+<title>G. Nikolopoulos — Systems Administrator</title>
 <meta name="description" content="Junior Systems Administrator building and breaking identity infrastructure.">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -211,12 +208,34 @@ button{ font:inherit; color:inherit; background:none; border:none; cursor:pointe
 }
 
 .topo-svg{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+
+/* --- wire: length measured in JS, so the draw is even on every line --- */
 .topo-wire{
-  fill:none; stroke:var(--accent); stroke-width:.35; opacity:.55;
-  stroke-dasharray:100; stroke-dashoffset:100;
-  transition:stroke-dashoffset .6s cubic-bezier(.16,1,.3,1), opacity .3s ease;
+  fill:none; stroke:var(--accent); stroke-width:1.1; stroke-linecap:round;
+  opacity:.42;
+  stroke-dasharray:var(--len,200px); stroke-dashoffset:var(--len,200px);
+  transition:stroke-dashoffset .78s cubic-bezier(.22,.85,.28,1) var(--d,0s),
+             opacity .5s ease var(--d,0s),
+             stroke-width .25s ease;
 }
 .topo-wire.drawn{ stroke-dashoffset:0; }
+.topo-wire.hot{ opacity:1; stroke-width:1.9; }
+
+/* --- travelling packet that runs core -> node once the wire lands --- */
+.topo-flow{
+  fill:none; stroke:var(--accent); stroke-width:3.2; stroke-linecap:round;
+  stroke-dasharray:1px var(--len,200px); stroke-dashoffset:0;
+  opacity:0; pointer-events:none;
+  animation:topoPulse 3.6s cubic-bezier(.45,.05,.55,.95) infinite;
+  animation-delay:var(--fd,0s);
+}
+@keyframes topoPulse{
+  0%   { stroke-dashoffset:0; opacity:0; }
+  8%   { opacity:.95; }
+  55%  { opacity:.95; }
+  70%  { stroke-dashoffset:calc(var(--len,200px) * -1); opacity:0; }
+  100% { stroke-dashoffset:calc(var(--len,200px) * -1); opacity:0; }
+}
 
 .topo-core{
   position:absolute; left:8%; top:50%; transform:translate(-50%,-50%);
@@ -234,10 +253,19 @@ button{ font:inherit; color:inherit; background:none; border:none; cursor:pointe
   padding:9px 14px; border-radius:100px; border:1px solid var(--line);
   background:var(--surface); font-family:var(--font-mono); font-size:11.5px; color:var(--ink);
   white-space:nowrap; z-index:3;
-  opacity:0; transition:opacity .4s ease, transform .3s ease, border-color .2s ease, background .2s ease;
+  opacity:0;
+  transform:translate(-50%,-50%) translate(var(--tx,-24px), var(--ty,0px)) scale(.86);
+  transition:opacity .42s ease var(--d,0s),
+             transform .72s cubic-bezier(.2,.86,.26,1.06) var(--d,0s),
+             border-color .22s ease, background .22s ease, box-shadow .22s ease;
 }
-.topo-node.shown{ opacity:1; }
-.topo-node:hover{ border-color:var(--accent); background:var(--surface-2); transform:translate(-50%,-50%) translateY(-2px); }
+.topo-node.shown{ opacity:1; transform:translate(-50%,-50%) translate(0,0) scale(1); }
+.topo-node.shown:hover, .topo-node.shown:focus-visible{
+  border-color:var(--accent); background:var(--surface-2);
+  transform:translate(-50%,-50%) translateY(-3px) scale(1.03);
+  box-shadow:0 10px 26px var(--accent-dim);
+  transition-delay:0s;
+}
 .topo-node .status-dot{ flex-shrink:0; }
 
 .topo-tooltip{
@@ -364,17 +392,38 @@ button{ font:inherit; color:inherit; background:none; border:none; cursor:pointe
 
 /* modal */
 .modal-backdrop{
-  position:fixed; inset:0; z-index:100; background:rgba(3,4,8,.7); backdrop-filter:blur(4px);
+  position:fixed; inset:0; z-index:100; background:rgba(3,4,8,.7);
   display:flex; align-items:center; justify-content:center; padding:24px;
-  opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s ease;
+  opacity:0; visibility:hidden;
+  -webkit-backdrop-filter:blur(0px); backdrop-filter:blur(0px);
+  transition:opacity .34s cubic-bezier(.4,0,.2,1),
+             visibility .34s cubic-bezier(.4,0,.2,1),
+             backdrop-filter .34s ease, -webkit-backdrop-filter .34s ease;
 }
-.modal-backdrop.open{ opacity:1; visibility:visible; }
+.modal-backdrop.open{
+  opacity:1; visibility:visible;
+  -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+}
 .modal{
-  width:100%; max-width:560px; max-height:82vh; overflow-y:auto;
+  position:relative;
+  width:100%; max-width:560px; max-height:82vh; overflow-y:auto; overscroll-behavior:contain;
   background:var(--surface); border:1px solid var(--line-bright); border-radius:12px;
-  padding:32px; transform:translateY(16px) scale(.98); transition:transform .25s cubic-bezier(.16,1,.3,1);
+  padding:32px; opacity:0; will-change:transform;
+  /* --ox/--oy point back at the card that was clicked */
+  transform:translate(var(--ox,0px), var(--oy,26px)) scale(.88);
+  transition:transform .5s cubic-bezier(.2,.88,.26,1.04), opacity .3s ease;
 }
-.modal-backdrop.open .modal{ transform:translateY(0) scale(1); }
+.modal-backdrop.open .modal{ transform:translate(0,0) scale(1); opacity:1; }
+
+/* content cascades in behind the panel */
+.modal .m-anim{
+  opacity:0; transform:translateY(14px);
+  transition:opacity .44s ease var(--d,0s),
+             transform .56s cubic-bezier(.16,1,.3,1) var(--d,0s);
+}
+.modal-backdrop.open .m-anim{ opacity:1; transform:none; }
+/* closing should be quick — no waiting through the stagger */
+.modal-backdrop:not(.open) .m-anim{ transition-duration:.16s; transition-delay:0s; }
 .modal-close{ position:absolute; top:18px; right:18px; }
 .modal h3{ font-family:var(--font-display); font-weight:600; font-size:1.5rem; margin-bottom:18px; padding-right:30px; }
 .modal-section{ margin-bottom:20px; }
@@ -393,7 +442,7 @@ button{ font:inherit; color:inherit; background:none; border:none; cursor:pointe
    COMMAND PALETTE
    =================================================================== */
 .cmdk-backdrop{
-  position:fixed; inset:0; z-index:200; background:rgba(3,4,8,.7); backdrop-filter:blur(4px);
+  position:fixed; inset:0; z-index:260; background:rgba(3,4,8,.7); backdrop-filter:blur(4px);
   display:flex; align-items:flex-start; justify-content:center; padding:14vh 20px;
   opacity:0; visibility:hidden; transition:opacity .2s ease, visibility .2s ease;
 }
@@ -418,6 +467,194 @@ button{ font:inherit; color:inherit; background:none; border:none; cursor:pointe
 .cmdk-item.active, .cmdk-item:hover{ background:var(--surface-2); color:var(--ink); }
 .cmdk-item .grp{ font-family:var(--font-mono); font-size:10px; color:var(--ink-faint); }
 .cmdk-empty{ padding:24px; text-align:center; color:var(--ink-faint); font-size:13px; }
+
+/* ===================================================================
+   PROJECTS ROADMAP — curtain sheet
+   =================================================================== */
+.status-dot.cool{ background:var(--cool); box-shadow:0 0 8px var(--cool); }
+
+/* --- morphing bars icon (hamburger <-> X) --- */
+.rm-icon{ display:block; flex-shrink:0; overflow:visible; }
+.rm-icon path{
+  fill:none; stroke:currentColor; stroke-width:2;
+  stroke-linecap:round; stroke-linejoin:round;
+}
+
+.roadmap-btn{
+  position:relative; background:#0A0600; color:var(--accent);
+  border:1px solid var(--line-bright); font-weight:600;
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.roadmap-btn:hover{ transform:translateY(-1px); box-shadow:0 8px 24px var(--accent-dim); border-color:var(--accent); }
+.roadmap-btn .rm-icon{ margin-right:2px; }
+
+/* --- the sheet --- */
+.roadmap{
+  position:fixed; inset:0; z-index:250;
+  visibility:hidden; pointer-events:none;
+}
+.roadmap.is-active{ visibility:visible; pointer-events:auto; }
+
+.roadmap-plate{
+  position:absolute; inset:0;
+  background:var(--surface-2);
+  transform:translate3d(0,-100%,0);
+  will-change:transform;
+}
+/* convex leading edge — height driven from JS via --bulge */
+.roadmap-plate::after{
+  content:""; position:absolute; top:100%; left:0;
+  width:100%; height:var(--bulge,0px);
+  background:var(--surface-2);
+  border-radius:0 0 50% 50% / 0 0 100% 100%;
+  pointer-events:none;
+}
+.roadmap-tex{
+  position:absolute; inset:0; pointer-events:none;
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size:44px 44px;
+  -webkit-mask-image:radial-gradient(130% 90% at 50% 0%, #000 0%, transparent 78%);
+  mask-image:radial-gradient(130% 90% at 50% 0%, #000 0%, transparent 78%);
+}
+.roadmap-glow{
+  position:absolute; top:-280px; left:50%; transform:translateX(-50%);
+  width:900px; height:620px; border-radius:50%; pointer-events:none;
+  background:radial-gradient(circle, var(--accent-dim) 0%, transparent 68%);
+  filter:blur(12px);
+}
+.roadmap-inner{
+  position:absolute; inset:0; overflow-y:auto; overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.roadmap-shell{
+  position:relative; max-width:1120px; margin:0 auto;
+  min-height:100%; padding:26px 24px 34px;
+  display:flex; flex-direction:column; gap:40px;
+}
+
+/* --- staggered reveal --- */
+.rm-anim{
+  opacity:0; transform:translateY(16px);
+  clip-path:inset(0 0 100% 0);
+  transition:opacity .55s cubic-bezier(.16,1,.3,1),
+             transform .65s cubic-bezier(.16,1,.3,1),
+             clip-path .65s cubic-bezier(.16,1,.3,1);
+  transition-delay:var(--d,0s);
+}
+.roadmap.is-open .rm-anim{ opacity:1; transform:none; clip-path:inset(0 0 0 0); }
+
+/* --- header --- */
+.rm-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:20px; }
+.rm-title{
+  font-family:var(--font-display); font-weight:700;
+  font-size:clamp(1.8rem,4vw,2.7rem); line-height:1.03; letter-spacing:-0.015em;
+  max-width:24ch;
+}
+.rm-close{
+  width:38px; height:38px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--accent); color:#0A0600; border-radius:var(--radius);
+  transition:transform .18s ease, box-shadow .18s ease;
+}
+.rm-close:hover{ transform:translateY(-1px); box-shadow:0 8px 24px var(--accent-dim); }
+.rm-close .rm-icon path{ stroke-width:2.2; }
+
+/* --- body grid --- */
+.rm-grid{
+  flex:1; display:grid; grid-template-columns:minmax(0,290px) minmax(0,1fr);
+  gap:clamp(28px,5vw,72px); align-items:start;
+}
+.rm-rail{ border-top:1px solid var(--line); padding-top:22px; }
+.rm-lede{ color:var(--ink-dim); font-size:14.5px; max-width:34ch; }
+.rm-meta{
+  margin-top:22px; border-top:1px solid var(--line);
+  font-family:var(--font-mono); font-size:11.5px;
+}
+.rm-meta div{
+  display:flex; justify-content:space-between; gap:12px;
+  padding:11px 0; border-bottom:1px solid var(--line);
+}
+.rm-meta dt{ color:var(--ink-faint); letter-spacing:.08em; text-transform:uppercase; font-size:10px; }
+.rm-meta dd{ color:var(--ink); }
+
+/* --- roadmap list --- */
+.rm-list{ list-style:none; border-top:1px solid var(--line); }
+.rm-item{ border-bottom:1px solid var(--line); }
+.rm-row{
+  position:relative; display:grid; grid-template-columns:44px minmax(0,1fr);
+  gap:0 18px; padding:24px 0 26px;
+  transition:padding-left .3s cubic-bezier(.16,1,.3,1);
+}
+.rm-row::before{
+  content:""; position:absolute; left:0; top:0; bottom:0; width:2px;
+  background:var(--accent); transform:scaleY(0); transform-origin:top;
+  transition:transform .35s cubic-bezier(.16,1,.3,1);
+}
+.rm-item:hover .rm-row, .rm-item:focus-within .rm-row{ padding-left:16px; }
+.rm-item:hover .rm-row::before, .rm-item:focus-within .rm-row::before{ transform:scaleY(1); }
+.rm-num{
+  font-family:var(--font-mono); font-size:11px; color:var(--ink-faint);
+  padding-top:6px; letter-spacing:.06em;
+}
+.rm-item:hover .rm-num{ color:var(--accent); }
+.rm-head-line{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.rm-name{
+  font-family:var(--font-display); font-weight:600;
+  font-size:clamp(1.2rem,2.4vw,1.6rem); letter-spacing:-0.01em; line-height:1.15;
+}
+.rm-status{
+  display:flex; align-items:center; gap:7px; flex-shrink:0;
+  font-family:var(--font-mono); font-size:10px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-faint);
+}
+.rm-desc{ margin-top:10px; color:var(--ink-dim); font-size:14.5px; max-width:62ch; }
+.rm-tags{ display:flex; flex-wrap:wrap; gap:7px; margin-top:14px; }
+.rm-tags .tag{
+  font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint);
+  border:1px solid var(--line); border-radius:3px; padding:3px 8px;
+}
+
+/* --- footer --- */
+.rm-foot{
+  display:flex; align-items:center; justify-content:flex-end;
+  flex-wrap:wrap; gap:14px; padding-top:20px; border-top:1px solid var(--line);
+  font-family:var(--font-mono); font-size:11px; color:var(--ink-faint);
+}
+.rm-jump{
+  display:inline-flex; align-items:center; gap:8px; padding:10px 14px;
+  border:1px solid var(--line); border-radius:var(--radius);
+  font-family:var(--font-mono); font-size:12px; color:var(--ink-dim);
+  transition:border-color .18s ease, color .18s ease;
+}
+.rm-jump:hover{ color:var(--ink); border-color:var(--line-bright); }
+
+@media (max-width:860px){
+  .rm-grid{ grid-template-columns:1fr; gap:32px; }
+  .rm-meta{ margin-top:20px; }
+}
+@media (max-width:700px){
+  .roadmap-shell{ padding:20px 20px 30px; gap:30px; }
+  .rm-row{ grid-template-columns:34px minmax(0,1fr); gap:0 12px; padding:20px 0 22px; }
+  .rm-desc{ font-size:14px; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .rm-anim{ opacity:1; transform:none; clip-path:none; transition:none; }
+  .rm-close:hover{ transform:none; }
+  .rm-row, .rm-row::before{ transition:none; }
+
+  .topo-wire{ transition:none; stroke-dashoffset:0; }
+  .topo-flow{ display:none; }
+  .topo-node{ transition:none; transform:translate(-50%,-50%); opacity:1; }
+  .topo-node.shown{ transform:translate(-50%,-50%); }
+  .topo-node.shown:hover, .topo-node.shown:focus-visible{ transform:translate(-50%,-50%); }
+
+  .modal{ transition:opacity .12s ease; transform:none; }
+  .modal-backdrop.open .modal{ transform:none; }
+  .modal .m-anim{ opacity:1; transform:none; transition:none; }
+}
 
 /* ===================================================================
    FOOTER
@@ -564,7 +801,13 @@ html.boot-active body{ overflow:hidden; height:100%; }
 
       <div class="hero-cta reveal" style="--delay:.24s">
         <button class="btn btn-primary" data-magnetic data-scroll-to="operations">View operations</button>
-        <button class="btn btn-ghost" data-magnetic data-cmdk-open>Command palette <kbd class="mono" style="opacity:.6">&#8984;K</kbd></button>
+        <button class="btn btn-ghost roadmap-btn" data-magnetic data-roadmap-toggle aria-expanded="false" aria-controls="roadmap">
+          <svg class="rm-icon" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">
+            <path data-rm-bar="a" d="M 5 9 C 9.67 9, 14.33 9, 19 9"/>
+            <path data-rm-bar="b" d="M 5 15 C 9.67 15, 14.33 15, 19 15"/>
+          </svg>
+          Projects roadmap
+        </button>
       </div>
 
       <div class="readout reveal" style="--delay:.32s">
@@ -727,6 +970,42 @@ html.boot-active body{ overflow:hidden; height:100%; }
       <span class="cmdk-esc">ESC</span>
     </div>
     <div class="cmdk-list" id="cmdk-list"></div>
+  </div>
+</div>
+
+<!-- ============ PROJECTS ROADMAP ============ -->
+<div class="roadmap" id="roadmap" aria-hidden="true">
+  <div class="roadmap-plate" id="roadmap-plate">
+    <div class="roadmap-tex"></div>
+    <div class="roadmap-glow"></div>
+    <div class="roadmap-inner" id="roadmap-inner">
+      <div class="roadmap-shell" role="dialog" aria-modal="true" aria-labelledby="rm-title">
+        <header class="rm-head">
+          <div>
+            <div class="eyebrow rm-anim" style="--d:.02s">Projects roadmap</div>
+            <h2 class="rm-title rm-anim" id="rm-title" style="--d:.06s">What gets built next.</h2>
+          </div>
+          <button class="rm-close rm-anim" id="rm-close" style="--d:.02s" aria-label="Close roadmap">
+            <svg class="rm-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path data-rm-bar="a" d="M 5 9 C 9.67 9, 14.33 9, 19 9"/>
+              <path data-rm-bar="b" d="M 5 15 C 9.67 15, 14.33 15, 19 15"/>
+            </svg>
+          </button>
+        </header>
+
+        <div class="rm-grid">
+          <aside class="rm-rail">
+            <p class="rm-lede rm-anim" style="--d:.10s" id="rm-lede"></p>
+            <dl class="rm-meta rm-anim" style="--d:.14s" id="rm-meta"></dl>
+          </aside>
+          <ol class="rm-list" id="rm-list"></ol>
+        </div>
+
+        <footer class="rm-foot rm-anim" id="rm-foot">
+          <button class="rm-jump" data-rm-jump="operations">Completed operations &rarr;</button>
+        </footer>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1201,6 +1480,7 @@ html.boot-active body{ overflow:hidden; height:100%; }
   var mobileEl = document.getElementById("topo-mobile");
   var tooltipEl = document.getElementById("topo-tooltip");
   var activeCategory = "cloud";
+  var topoSettleTimer = null;
 
   function renderTopology(category) {
     activeCategory = category;
@@ -1220,44 +1500,113 @@ html.boot-active body{ overflow:hidden; height:100%; }
       });
       svgEl.innerHTML = "";
 
-      var coreX = 8, coreY = 50;
-      var startAngle = -34, endAngle = 34;
-      var n = data.nodes.length;
-      var radiusX = 74, radiusY = 40;
+      var rect = mapEl.getBoundingClientRect();
+      var W = rect.width;
+      var H = rect.height;
 
-      data.nodes.forEach(function (node, i) {
-        var t = n === 1 ? 0.5 : i / (n - 1);
-        var angle = (startAngle + t * (endAngle - startAngle)) * (Math.PI / 180);
-        var x = coreX + Math.cos(angle) * radiusX;
-        var y = coreY + Math.sin(angle) * radiusY;
+      /* hidden (mobile breakpoint) — nothing to lay out */
+      if (W > 10 && H > 10) {
+        /* map the viewBox 1:1 onto pixels so dash lengths are never
+           distorted by non-uniform scaling — that was what made the
+           wires draw as broken fragments */
+        svgEl.setAttribute("viewBox", "0 0 " + W + " " + H);
 
-        var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        var midX = (coreX + x) / 2 + 4;
-        path.setAttribute("d", "M " + coreX + " " + coreY + " Q " + midX + " " + coreY + " " + x + " " + y);
-        path.setAttribute("class", "topo-wire");
-        path.setAttribute("vector-effect", "non-scaling-stroke");
-        svgEl.appendChild(path);
+        var coreXpct = 8, coreYpct = 50;
+        var coreX = (W * coreXpct) / 100;
+        var coreY = (H * coreYpct) / 100;
+        var startAngle = -34, endAngle = 34;
+        var n = data.nodes.length;
+        var radiusX = 74, radiusY = 40;
+        var pending = [];
 
-        var btn = document.createElement("button");
-        btn.className = "topo-node";
-        btn.style.left = x + "%";
-        btn.style.top = y + "%";
-        btn.innerHTML = '<span class="status-dot ok"></span><span>' + node.name + "</span>";
-        btn.addEventListener("mouseenter", function () {
-          showTooltip(btn, node.desc);
+        data.nodes.forEach(function (node, i) {
+          var t = n === 1 ? 0.5 : i / (n - 1);
+          var angle = (startAngle + t * (endAngle - startAngle)) * (Math.PI / 180);
+          var xPct = coreXpct + Math.cos(angle) * radiusX;
+          var yPct = coreYpct + Math.sin(angle) * radiusY;
+          var x = (W * xPct) / 100;
+          var y = (H * yPct) / 100;
+
+          /* cubic S-curve: leaves the core horizontally, arrives at the
+             node horizontally — reads much smoother than a quadratic */
+          var dx = x - coreX;
+          var d =
+            "M " + coreX.toFixed(2) + " " + coreY.toFixed(2) +
+            " C " + (coreX + dx * 0.42).toFixed(2) + " " + coreY.toFixed(2) +
+            ", " + (coreX + dx * 0.66).toFixed(2) + " " + y.toFixed(2) +
+            ", " + x.toFixed(2) + " " + y.toFixed(2);
+
+          var wireDelay = reduced ? 0 : i * 0.07;
+          var nodeDelay = reduced ? 0 : i * 0.07 + 0.3;
+
+          var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          path.setAttribute("d", d);
+          path.setAttribute("class", "topo-wire");
+          svgEl.appendChild(path);
+
+          /* measure the real path length so every wire draws evenly */
+          var len = path.getTotalLength();
+          path.style.setProperty("--len", len.toFixed(1) + "px");
+          path.style.setProperty("--d", wireDelay.toFixed(2) + "s");
+
+          if (!reduced) {
+            var flow = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            flow.setAttribute("d", d);
+            flow.setAttribute("class", "topo-flow");
+            flow.style.setProperty("--len", len.toFixed(1) + "px");
+            flow.style.setProperty("--fd", (1.05 + i * 0.28).toFixed(2) + "s");
+            svgEl.appendChild(flow);
+          }
+
+          var btn = document.createElement("button");
+          btn.className = "topo-node";
+          btn.style.left = xPct + "%";
+          btn.style.top = yPct + "%";
+          btn.style.setProperty("--d", nodeDelay.toFixed(2) + "s");
+          /* start pulled back along its own wire, toward the core */
+          var mag = Math.sqrt(dx * dx + (y - coreY) * (y - coreY)) || 1;
+          btn.style.setProperty("--tx", (-(dx / mag) * 30).toFixed(1) + "px");
+          btn.style.setProperty("--ty", (-((y - coreY) / mag) * 30).toFixed(1) + "px");
+          btn.innerHTML = '<span class="status-dot ok"></span><span>' + node.name + "</span>";
+
+          function enter() {
+            showTooltip(btn, node.desc);
+            path.classList.add("hot");
+          }
+          function leave() {
+            hideTooltip();
+            path.classList.remove("hot");
+          }
+          btn.addEventListener("mouseenter", enter);
+          btn.addEventListener("focus", enter);
+          btn.addEventListener("mouseleave", leave);
+          btn.addEventListener("blur", leave);
+          mapEl.appendChild(btn);
+
+          pending.push([btn, path]);
         });
-        btn.addEventListener("focus", function () {
-          showTooltip(btn, node.desc);
-        });
-        btn.addEventListener("mouseleave", hideTooltip);
-        btn.addEventListener("blur", hideTooltip);
-        mapEl.appendChild(btn);
 
-        setTimeout(function () {
-          btn.classList.add("shown");
-          path.classList.add("drawn");
-        }, reduced ? 0 : 60 * i + 80);
-      });
+        /* two frames so the browser commits the start state before the
+           transition — otherwise the whole thing snaps into place */
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            pending.forEach(function (pair) {
+              pair[0].classList.add("shown");
+              pair[1].classList.add("drawn");
+            });
+          });
+        });
+
+        /* once the intro has played, drop the stagger delays so hover
+           reacts instantly instead of waiting out the entrance timing */
+        clearTimeout(topoSettleTimer);
+        topoSettleTimer = setTimeout(function () {
+          pending.forEach(function (pair) {
+            pair[0].style.setProperty("--d", "0s");
+            pair[1].style.setProperty("--d", "0s");
+          });
+        }, reduced ? 0 : n * 70 + 1150);
+      }
     }
 
     // ---- mobile list ----
@@ -1294,6 +1643,21 @@ html.boot-active body{ overflow:hidden; height:100%; }
     });
   }
   if (mapEl) renderTopology(activeCategory);
+
+  /* the viewBox is pixel-mapped now, so re-lay it out when the box changes */
+  var topoResizeTimer = null;
+  var topoLastW = mapEl ? Math.round(mapEl.getBoundingClientRect().width) : 0;
+  window.addEventListener("resize", function () {
+    if (!mapEl) return;
+    clearTimeout(topoResizeTimer);
+    topoResizeTimer = setTimeout(function () {
+      var w = Math.round(mapEl.getBoundingClientRect().width);
+      if (w !== topoLastW) {
+        topoLastW = w;
+        renderTopology(activeCategory);
+      }
+    }, 180);
+  });
 
   /* =============================================================
      HOMELAB CONTROL CENTER — Internet -> OPNsense -> Proxmox -> Docker
@@ -1396,37 +1760,86 @@ html.boot-active body{ overflow:hidden; height:100%; }
       card.style.setProperty("--my", e.clientY - r.top + "px");
     });
     card.addEventListener("click", function () {
-      openOpModal(op);
+      openOpModal(op, card);
     });
     return card;
   }
 
-  function openOpModal(op) {
+  var modalPanel = modalBackdrop ? modalBackdrop.querySelector(".modal") : null;
+  var modalLastFocus = null;
+
+  function openOpModal(op, originEl) {
     if (!modalBackdrop || !modalBody) return;
-    modalBody.innerHTML =
-      "<h3>" + op.title + "</h3>" +
-      '<div class="modal-section"><h4>Architecture</h4><ul class="modal-list">' +
+    modalLastFocus = document.activeElement;
+
+    /* stagger index runs down the panel */
+    var step = 0;
+    function anim() {
+      var s = ' class="m-anim" style="--d:' + (0.1 + step * 0.06).toFixed(2) + 's"';
+      step++;
+      return s;
+    }
+    var head = "<h3" + anim() + ">" + op.title + "</h3>";
+    var arch =
+      '<div class="modal-section m-anim" style="--d:' + (0.1 + step++ * 0.06).toFixed(2) +
+      's"><h4>Architecture</h4><ul class="modal-list">' +
       op.architecture.map(function (a) { return "<li>" + a + "</li>"; }).join("") +
-      "</ul></div>" +
-      '<div class="modal-section"><h4>Tools</h4><div class="op-tags">' +
+      "</ul></div>";
+    var tools =
+      '<div class="modal-section m-anim" style="--d:' + (0.1 + step++ * 0.06).toFixed(2) +
+      's"><h4>Tools</h4><div class="op-tags">' +
       op.tools.map(function (t) { return '<span class="tag">' + t + "</span>"; }).join("") +
-      "</div></div>" +
-      '<div class="modal-section"><h4>Key achievement</h4><p>' + op.achievement + "</p></div>" +
-      (op.note ? '<div class="modal-note"><p>' + op.note + "</p></div>" : "");
-    modalBackdrop.classList.add("open");
+      "</div></div>";
+    var ach =
+      '<div class="modal-section m-anim" style="--d:' + (0.1 + step++ * 0.06).toFixed(2) +
+      's"><h4>Key achievement</h4><p>' + op.achievement + "</p></div>";
+    var note = op.note
+      ? '<div class="modal-note m-anim" style="--d:' + (0.1 + step++ * 0.06).toFixed(2) +
+        's"><p>' + op.note + "</p></div>"
+      : "";
+
+    modalBody.innerHTML = head + arch + tools + ach + note;
+
+    /* aim the panel at the card that was clicked so it grows out of it */
+    if (modalPanel) {
+      modalPanel.scrollTop = 0;
+      var ox = 0, oy = 26;
+      if (originEl && !reduced) {
+        var r = originEl.getBoundingClientRect();
+        ox = r.left + r.width / 2 - window.innerWidth / 2;
+        oy = r.top + r.height / 2 - window.innerHeight / 2;
+        /* keep the travel tasteful on far-away cards */
+        ox = Math.max(-180, Math.min(180, ox * 0.45));
+        oy = Math.max(-180, Math.min(180, oy * 0.45));
+      }
+      modalPanel.style.setProperty("--ox", ox.toFixed(1) + "px");
+      modalPanel.style.setProperty("--oy", oy.toFixed(1) + "px");
+    }
+
     document.body.style.overflow = "hidden";
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        modalBackdrop.classList.add("open");
+      });
+    });
   }
+
   function closeOpModal() {
-    if (!modalBackdrop) return;
+    if (!modalBackdrop || !modalBackdrop.classList.contains("open")) return;
     modalBackdrop.classList.remove("open");
     document.body.style.overflow = "";
+    if (modalLastFocus && modalLastFocus.focus) modalLastFocus.focus({ preventScroll: true });
   }
+
   if (modalBackdrop) {
     modalBackdrop.addEventListener("click", function (e) {
       if (e.target === modalBackdrop) closeOpModal();
     });
     document.querySelectorAll("[data-modal-close]").forEach(function (b) {
       b.addEventListener("click", closeOpModal);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeOpModal();
     });
   }
 
@@ -1468,6 +1881,7 @@ html.boot-active body{ overflow:hidden; height:100%; }
     { label: "Go to contact", group: "Nav", action: function () { scrollToId("contact"); } },
     { label: "Copy email address", group: "Contact", action: function () { copyText(EMAIL, "Email copied"); } },
     { label: "Copy GitHub link", group: "Contact", action: function () { copyText(GITHUB_URL, "GitHub link copied"); } },
+    { label: "Open projects roadmap", group: "Nav", action: openRoadmap },
     { label: "Toggle theme", group: "Preferences", action: toggleTheme }
   ];
 
@@ -1568,6 +1982,274 @@ html.boot-active body{ overflow:hidden; height:100%; }
       closeCmdk();
       closeOpModal();
     }
+  });
+
+  /* =============================================================
+     PROJECTS ROADMAP — curtain sheet + morphing bars icon
+     Edit ROADMAP_META and ROADMAP below to change the content.
+     ============================================================= */
+  var ROADMAP_META = {
+    lede: "What's queued next, in the order I plan to tackle it.",
+    rows: [
+      ["Queued", "03 projects"],
+      ["Focus", "Self-hosting / Azure"],
+      ["Reviewed", "August 2026"]
+    ]
+  };
+
+  var ROADMAP = [
+    {
+      id: "01",
+      title: "All-in-one Proxmox home lab",
+      status: "Next up",
+      dot: "ok",
+      summary:
+        "A compact mini PC running Proxmox VE, hosting a suite of self-hosted services in LXC containers — Pi-hole for network-wide ad blocking, Jellyfin for GPU-accelerated streaming, and Nextcloud for private cloud storage — reachable securely from anywhere over Tailscale.",
+      tags: ["Proxmox VE", "LXC", "Pi-hole", "Jellyfin", "Nextcloud", "Tailscale"]
+    },
+    {
+      id: "02",
+      title: "AZ-104: Azure Administrator",
+      status: "In progress",
+      dot: "warn",
+      summary:
+        "Working through the official AZ-104 curriculum — identity, storage, networking, and compute — with hands-on labs and a bit of analysis after each module before sitting the exam.",
+      tags: ["Microsoft Azure", "AZ-104", "Certification"]
+    },
+    {
+      id: "03",
+      title: "SC-300: Identity & Access Administrator",
+      status: "Planned",
+      dot: "cool",
+      summary:
+        "A natural follow-on from AZ-104 — conditional access, entitlement management, and hybrid identity — building directly on the Entra ID work already in the lab.",
+      tags: ["Microsoft Entra ID", "SC-300", "Certification"]
+    }
+  ];
+
+  var rmEl = document.getElementById("roadmap");
+  var rmPlate = document.getElementById("roadmap-plate");
+  var rmInner = document.getElementById("roadmap-inner");
+  var rmCloseBtn = document.getElementById("rm-close");
+  var rmBars = document.querySelectorAll("[data-rm-bar]");
+  var rmTriggers = document.querySelectorAll("[data-roadmap-toggle]");
+  var rmIsOpen = false;
+  var rmRaf = null;
+  var rmLastFocus = null;
+  var rmRevealTimer = null;
+
+  /* ---- content ---------------------------------------------- */
+  function renderRoadmap() {
+    var lede = document.getElementById("rm-lede");
+    var meta = document.getElementById("rm-meta");
+    var list = document.getElementById("rm-list");
+    var foot = document.getElementById("rm-foot");
+    if (!list) return;
+
+    if (lede) lede.textContent = ROADMAP_META.lede;
+    if (meta) {
+      meta.innerHTML = ROADMAP_META.rows
+        .map(function (r) {
+          return "<div><dt>" + r[0] + "</dt><dd>" + r[1] + "</dd></div>";
+        })
+        .join("");
+    }
+
+    list.innerHTML = "";
+    ROADMAP.forEach(function (item, i) {
+      var li = document.createElement("li");
+      li.className = "rm-item rm-anim";
+      li.style.setProperty("--d", (0.18 + i * 0.07).toFixed(2) + "s");
+      li.innerHTML =
+        '<div class="rm-row">' +
+        '<div class="rm-num">' + item.id + "</div>" +
+        "<div>" +
+        '<div class="rm-head-line">' +
+        '<h3 class="rm-name">' + item.title + "</h3>" +
+        '<span class="rm-status"><span class="status-dot ' + item.dot + '"></span>' + item.status + "</span>" +
+        "</div>" +
+        '<p class="rm-desc">' + item.summary + "</p>" +
+        '<div class="rm-tags">' +
+        item.tags.map(function (t) { return '<span class="tag">' + t + "</span>"; }).join("") +
+        "</div>" +
+        "</div></div>";
+      list.appendChild(li);
+    });
+
+    if (foot) foot.style.setProperty("--d", (0.18 + ROADMAP.length * 0.07).toFixed(2) + "s");
+  }
+  renderRoadmap();
+
+  /* ---- icon morph: two bars whip round into an X -------------
+     Each bar is a cubic curve. The four control points travel on
+     staggered clocks, so one end leads and the stroke bends on the
+     way over instead of rigidly rotating.
+     ------------------------------------------------------------ */
+  var RM_BARS = {
+    a: {
+      from: [[5, 9], [9.67, 9], [14.33, 9], [19, 9]],
+      to: [[5.6, 5.6], [9.87, 9.87], [14.13, 14.13], [18.4, 18.4]],
+      lead: 0
+    },
+    b: {
+      from: [[5, 15], [9.67, 15], [14.33, 15], [19, 15]],
+      to: [[5.6, 18.4], [9.87, 14.13], [14.13, 9.87], [18.4, 5.6]],
+      lead: 3
+    }
+  };
+  var RM_LAG = 0.16;
+
+  function rmPointClock(p, i, lead) {
+    var order = lead === 0 ? i : 3 - i;
+    var t = (p - order * RM_LAG) / (1 - 3 * RM_LAG);
+    return t < 0 ? 0 : t > 1 ? 1 : t;
+  }
+  function rmEase(t) { return 1 - Math.pow(1 - t, 5); }
+
+  function rmSetIcon(p) {
+    rmBars.forEach(function (el) {
+      var spec = RM_BARS[el.getAttribute("data-rm-bar")];
+      if (!spec) return;
+      var pts = [];
+      for (var i = 0; i < 4; i++) {
+        var e = rmEase(rmPointClock(p, i, spec.lead));
+        pts.push([
+          spec.from[i][0] + (spec.to[i][0] - spec.from[i][0]) * e,
+          spec.from[i][1] + (spec.to[i][1] - spec.from[i][1]) * e
+        ]);
+      }
+      el.setAttribute(
+        "d",
+        "M " + pts[0][0].toFixed(2) + " " + pts[0][1].toFixed(2) +
+        " C " + pts[1][0].toFixed(2) + " " + pts[1][1].toFixed(2) +
+        ", " + pts[2][0].toFixed(2) + " " + pts[2][1].toFixed(2) +
+        ", " + pts[3][0].toFixed(2) + " " + pts[3][1].toFixed(2)
+      );
+    });
+  }
+
+  /* ---- curtain -----------------------------------------------
+     The plate drops on an ease-out. --bulge inflates a wide
+     ellipse below its edge so the middle of the sheet leads and
+     flattens out as it lands.
+     ------------------------------------------------------------ */
+  var RM_OPEN_MS = 620;
+  var RM_CLOSE_MS = 470;
+  var RM_ICON_MS = 520;
+
+  function rmOutQuart(t) { return 1 - Math.pow(1 - t, 4); }
+  function rmInQuart(t) { return t * t * t * t; }
+
+  function rmRun(opening) {
+    var dur = opening ? RM_OPEN_MS : RM_CLOSE_MS;
+    var maxBulge = Math.min((window.innerHeight || 800) * 0.03, 34);
+    var iconMs = Math.min(RM_ICON_MS, dur);
+    var start = null;
+    if (rmRaf) cancelAnimationFrame(rmRaf);
+
+    function frame(now) {
+      if (start === null) start = now;
+      var t = Math.min(1, (now - start) / dur);
+      var cover = opening ? rmOutQuart(t) : 1 - rmInQuart(t);
+      var bulge = maxBulge * Math.pow(Math.sin(Math.PI * t), 1.1);
+      var ip = Math.min(1, (t * dur) / iconMs);
+
+      rmPlate.style.transform = "translate3d(0," + ((cover - 1) * 100).toFixed(3) + "%,0)";
+      rmPlate.style.setProperty("--bulge", bulge.toFixed(2) + "px");
+      rmSetIcon(opening ? ip : 1 - ip);
+
+      if (t < 1) {
+        rmRaf = requestAnimationFrame(frame);
+      } else {
+        rmRaf = null;
+        rmSettle(opening);
+      }
+    }
+    rmRaf = requestAnimationFrame(frame);
+  }
+
+  function rmSettle(opening) {
+    rmSetIcon(opening ? 1 : 0);
+    if (opening) {
+      rmPlate.style.setProperty("--bulge", "0px");
+      if (rmCloseBtn) rmCloseBtn.focus({ preventScroll: true });
+      return;
+    }
+    rmEl.classList.remove("is-active", "is-closing");
+    rmEl.setAttribute("aria-hidden", "true");
+    rmPlate.style.transform = "translate3d(0,-100%,0)";
+    rmPlate.style.setProperty("--bulge", "0px");
+    document.body.style.overflow = "";
+    if (rmLastFocus && rmLastFocus.focus) rmLastFocus.focus({ preventScroll: true });
+  }
+
+  function openRoadmap() {
+    if (rmIsOpen || !rmEl) return;
+    rmIsOpen = true;
+    rmLastFocus = document.activeElement;
+    if (rmInner) rmInner.scrollTop = 0;
+    rmEl.classList.remove("is-closing");
+    rmEl.classList.add("is-active");
+    rmEl.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    rmTriggers.forEach(function (b) { b.setAttribute("aria-expanded", "true"); });
+
+    if (reduced) {
+      rmPlate.style.transform = "translate3d(0,0,0)";
+      rmSetIcon(1);
+      rmEl.classList.add("is-open");
+      if (rmCloseBtn) rmCloseBtn.focus({ preventScroll: true });
+      return;
+    }
+    rmRun(true);
+    clearTimeout(rmRevealTimer);
+    rmRevealTimer = setTimeout(function () { rmEl.classList.add("is-open"); }, 170);
+  }
+
+  function closeRoadmap() {
+    if (!rmIsOpen || !rmEl) return;
+    rmIsOpen = false;
+    clearTimeout(rmRevealTimer);
+    rmEl.classList.remove("is-open");
+    rmEl.classList.add("is-closing");
+    rmTriggers.forEach(function (b) { b.setAttribute("aria-expanded", "false"); });
+
+    if (reduced) {
+      rmSetIcon(0);
+      rmSettle(false);
+      return;
+    }
+    rmRun(false);
+  }
+
+  function toggleRoadmap() { rmIsOpen ? closeRoadmap() : openRoadmap(); }
+
+  rmTriggers.forEach(function (b) { b.addEventListener("click", toggleRoadmap); });
+  if (rmCloseBtn) rmCloseBtn.addEventListener("click", closeRoadmap);
+
+  document.querySelectorAll("[data-rm-jump]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var target = b.getAttribute("data-rm-jump");
+      closeRoadmap();
+      setTimeout(function () { scrollToId(target); }, RM_CLOSE_MS - 120);
+    });
+  });
+
+  /* keep tab focus inside the sheet while it is open */
+  if (rmEl) {
+    rmEl.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") { closeRoadmap(); return; }
+      if (e.key !== "Tab") return;
+      var f = rmEl.querySelectorAll("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])");
+      if (!f.length) return;
+      var first = f[0];
+      var last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && rmIsOpen) closeRoadmap();
   });
 
   /* =============================================================
